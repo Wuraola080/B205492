@@ -1,11 +1,10 @@
 ---
-title: "Assessment"
+title: "Examining Seasonal Patterns of SSRI Antidepressant Use Across Scotland’s 3 Major Health Boards"
 output:
   html_document: default
   pdf_document: default
 date: "2024-11-01"
 ---
-#Examining Seasonal Patterns of SSRI Antidepressant Use Across Scotland’s 3 Major Health Boards
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
