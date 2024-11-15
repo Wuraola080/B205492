@@ -1,33 +1,123 @@
 ---
 title: "Assessment"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 date: "2024-11-01"
 ---
+#Examining Seasonal Patterns of SSRI Antidepressant Use Across Scotland’s 3 Major Health Boards
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
+##Introduction 
+Seasonal fluctuations in mental health are a well-documented phenomenon, with studies indicating that individuals may experience changes in mental health status depending on the time of year. Notably, the use of antidepressants, particularly selective serotonin reuptake inhibitors (SSRIs), has been observed to follow distinct seasonal patterns. These fluctuations can be influenced by factors such as daylight hours, weather conditions, academic pressures, and social events.
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
+In Scotland, a region known for its pronounced seasonal weather variations—understanding SSRI prescription patterns could provide valuable insights into how external factors impact mental health. This report examines seasonal patterns of SSRI use across Scotland's three major health boards, analyzing prescription data to identify any significant trends linked to seasonal shifts. Specifically, this analysis explores whether certain times of the year, such as autumn or winter, see increased demand for SSRIs, offering insights into seasonal mental health needs within the population.
+Load Libraries 
 ```{r cars}
 summary(cars)
-library(tidyverse)
-#practice if this works 
+library(tidyverse) 
+library(janitor) 
+library(gt)
+library(kableExtra)
+
+
+#the health board census population shows that the 3 health board with the most population includes NHS LOTHIAN, NHS GREATER GLASOW & NHS LANARKSHIRE 
+
+
+# Load the files containing 2019 prescription data
+pitc_list <- list.files(pattern = "pitc2019.*\\.csv$")
+prescribed_data_2019 <- pitc_list %>%
+  map_dfr(read_csv)
+
+# Quick check of the loaded data
+glimpse(prescribed_data_2019)
+
+#selecting and filter the 2019 data 
+selected_prescribed_data_2019 <- prescribed_data_2019 %>%
+  select(HBT2014, BNFItemDescription, PaidQuantity, PaidDateMonth) %>%
+  filter(
+    str_detect(BNFItemDescription, "^(SERTRALINE|PAROXETINE|FLUOXETINE|CITALOPRAM|ESCITALOPRAM)") &
+    HBT2014 %in% c("S08000032", "S08000031", "S08000024")
+  )
+
+# Check for missing values
+any(is.na(selected_prescribed_data_2019))
+
+
+  # mutating a new column for seasons based on paiddatemonth 
+  filtered_selected_prescribed_data_2019 <- selected_prescribed_data_2019 %>%
+  mutate(Season = case_when(
+    PaidDateMonth %in% c("201912", "201901", "201902") ~ "Winter",
+    PaidDateMonth %in% c("201903", "201904", "201905") ~ "Spring",
+    PaidDateMonth %in% c("201906", "201907", "201908") ~ "Summer",
+    PaidDateMonth %in% c("201909", "201910", "201911") ~ "Autumn",
+    TRUE ~ "Unknown"  # If no match, mark as "Unknown"
+  ))
+
+# View the updated dataframe
+head(filtered_selected_prescribed_data_2019)
+
+      #  Rename 'HBT2014' column values
+    filtered_selected_prescribed_data_2019 <- filtered_selected_prescribed_data_2019 %>%
+  mutate(HealthBoard = recode(HBT2014 ,
+    "S08000032" = "NHS Lanarkshire",
+    "S08000031" = "NHS Greater Glasgow & Clyde",
+    "S08000024" = "NHS Lothian",
+    .default = "Other"  # Default for other codes
+  )) %>% 
+    select(-HBT2014)
+ view(filtered_selected_prescribed_data_2019)
+   
+#groupby 
+ seasonal_data <- filtered_selected_prescribed_data_2019 %>%
+  group_by(HealthBoard, Season) %>%
+  summarise(total_prescriptions = sum(PaidQuantity, na.rm = TRUE)) %>%
+  ungroup()
+ 
+ view(seasonal_data)
+ 
 
 ```
 
 ## Including Plots
 
-You can also embed plots, for example:
-
 ```{r pressure, echo=FALSE}
-plot(pressure)
+
+# Seasonal pattern plot
+seasonal_plot <- seasonal_data %>%
+  ggplot(aes(x = Season, y = total_prescriptions, group = HealthBoard, color = HealthBoard)) +
+  geom_line(linewidth = 1.2) +         
+  geom_point(size = 3) +               
+  labs(
+    title = "Seasonal Patterns of SSRI Antidepressant Use Across Health Boards",
+    x = "Season",
+    y = "Total Prescriptions"
+  ) +
+  scale_color_manual(values = c(
+    "NHS Lanarkshire" = "blue", 
+    "NHS Greater Glasgow & Clyde" = "green", 
+    "NHS Lothian" = "purple"
+  )) +  
+  theme_minimal(base_size = 14) +      
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text = element_text(color = "gray30"),
+    panel.grid.major = element_line(color = "gray85"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# Display the plot
+seasonal_plot
+
 ```
+The visualization of SSRI prescriptions across Scotland's three major health boards in 2019 suggests a notable seasonal trend. Prescription rates appear to peak in the autumn months across NHS Greater Glasgow & Clyde, NHS Lanarkshire, and NHS Lothian, followed by a noticeable decline in winter, with spring and summer showing moderate levels. This pattern implies a possible cycle where prescription demand rises as autumn approaches and diminishes in winter. To understand if this trend is consistent, further analysis will involve expanding the dataset to cover the past decade. By examining a longer period,it will highlight whether these seasonal fluctuations are stable over time or influenced by other factor. 
+
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 please work!
