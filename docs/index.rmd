@@ -10,6 +10,7 @@ date: "2024-11-01"
 knitr::opts_chunk$set(echo = FALSE)
 ```
 ##Introduction 
+
 Seasonal fluctuations in mental health are a well-documented phenomenon, with studies indicating that individuals may experience changes in mental health status depending on the time of year. Notably, the use of antidepressants, particularly selective serotonin reuptake inhibitors (SSRIs), has been observed to follow distinct seasonal patterns. These fluctuations can be influenced by factors such as daylight hours, weather conditions, academic pressures, and social events.
 
 In Scotland, a region known for its pronounced seasonal weather variations—understanding SSRI prescription patterns could provide valuable insights into how external factors impact mental health. This report examines seasonal patterns of SSRI use across Scotland's three major health boards, analyzing prescription data to identify any significant trends linked to seasonal shifts. Specifically, this analysis explores whether certain times of the year, such as autumn or winter, see increased demand for SSRIs, offering insights into seasonal mental health needs within the population.
@@ -113,6 +114,7 @@ seasonal_plot <- seasonal_data %>%
 seasonal_plot
 
 ```
+##Interpretation 
 The visualization of SSRI prescriptions across Scotland's three major health boards in 2019 suggests a notable seasonal trend. Prescription rates appear to peak in the autumn months across NHS Greater Glasgow & Clyde, NHS Lanarkshire, and NHS Lothian, followed by a noticeable decline in winter, with spring and summer showing moderate levels. This pattern implies a possible cycle where prescription demand rises as autumn approaches and diminishes in winter. To understand if this trend is consistent, further analysis will involve expanding the dataset to cover the past decade. By examining a longer period,it will highlight whether these seasonal fluctuations are stable over time or influenced by other factor. 
 
 
