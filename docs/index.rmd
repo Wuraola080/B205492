@@ -131,14 +131,13 @@ p <- ggplot(Bar_prescribed_data, aes(x = Season, y = `Total prescriptions`, fill
     x = "Season",
     y = "Total Prescriptions"
   ) + theme_minimal() +
-  theme( axis.text.x = element_text(angle = 45, hjust = 1),   # Rotating x-axis labels
-    strip.text = element_text(face = "bold"), 
-    plot.margin = margin(30, 30, 30, 30),  # Add larger margins to avoid clipping
-    legend.position = "none"
-  ) +
-  scale_fill_manual(values = c("Winter" = "blue", "Spring" = "green", "Summer" = "orange", "Autumn" = "brown")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),   # Rotating x-axis labels
+        strip.text = element_text(face = "bold", size = 10, hjust = 0.5),  # Center facet labels
+        plot.margin = margin(30, 50, 30, 30),  # Increase right margin for more space
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 10, face = "bold")  # Center the plot title
+  ) + scale_fill_manual(values = c("Winter" = "blue", "Spring" = "green", "Summer" = "orange", "Autumn" = "brown")) +
   coord_cartesian(clip = "off")  # Prevent clipping of text outside plot area
-
 # Convert ggplot to Interactive Plotly Plot
 interactive_plot <- ggplotly(p, tooltip = c("x", "y", "text"))
 
