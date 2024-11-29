@@ -5,23 +5,26 @@ date: "2024-11-01"
 output:
   html_document: 
     toc: true           
-    toc_depth: 2        # Specify depth of the table of contents
+    toc_depth: 2        
   pdf_document:
-    number_sections: true  # Number sections in the PDF output
-fontsize: 12pt           # Set font size
-linestretch: 1.5         # Adjust line spacing
+   number_sections: true  
+fontsize: 9pt           
+linestretch: 1.5 
+geometry: a4paper,landscape,margin=0.5in
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 ## Introduction 
-Selective serotonin reuptake inhibitors (SSRIs) are a class of medications commonly prescribed to treat depression, anxiety, and other mental health conditions. They work by increasing the availability of serotonin, a neurotransmitter that helps regulate mood. Due to their broad application and generally favourable side effect profile, SSRIs are a key indicator of prescribing patterns linked to mental health needs within populations.
+Selective serotonin reuptake inhibitors (SSRIs) are a class of medications commonly prescribed to treat depression, anxiety, and other mental health conditions. They work by increasing the availability of serotonin, a neurotransmitter that helps regulate mood. Due to their broad application and generally favourable side effect profile, SSRIs are a key indicator of prescribing patterns linked to mental health needs within populations (Madsen et al., 2015).
+Mental health, however, is not static and can be influenced by various external factors, including environmental changes. Seasonal fluctuations in mood and mental health, often referred to as Seasonal Affective Disorder (SAD), are well-documented in medical literature (Lam et al., 2006). SAD is typically triggered by reduced daylight in the autumn and winter months, leading to symptoms such as low mood, anxiety, and feelings of hopelessness. While not everyone who experiences seasonal mood shifts meets the criteria for SAD, many individuals seek medical intervention, often in the form of antidepressant prescriptions (Harmatz et al., 2000).
 
-Mental health, however, is not static and can be influenced by various external factors, including environmental changes. Seasonal fluctuations in mood and mental health, often referred to as Seasonal Affective Disorder (SAD), are well-documented in medical literature. SAD is typically triggered by reduced daylight in the autumn and winter months, leading to symptoms such as low mood, anxiety, and feelings of hopelessness. While not everyone who experiences seasonal mood shifts meets the criteria for SAD, many individuals seek medical intervention, often in the form of antidepressant prescriptions.
+In Scotland, where seasonal variations are pronounced—such as extended periods of darkness in winter and unpredictable weather—these environmental factors may exacerbate mental health challenges. This could contribute to increased SSRI prescriptions during certain times of the year. Previous studies have shown that seasonal trends in antidepressant prescribing are influenced not only by environmental factors but also by societal pressures and healthcare access(Jack et al., 2023).
 
-In Scotland, where seasonal variations are pronounced—such as extended periods of darkness in winter and unpredictable weather—these environmental factors may exacerbate mental health challenges. This could contribute to increased SSRI prescriptions during certain times of the year. Other seasonal stressors, such as academic deadlines in the autumn or social pressures during the holiday season, may also influence the demand for mental health interventions.
+This report examines the seasonal trends in SSRI prescriptions across Scotland’s three major health boards, which represent the largest and primarily urban populations. Using the Public Health Scotland prescribing data, available here: https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community 
 
-This report examines the seasonal trends in SSRI prescriptions across Scotland’s three major health boards, which represent the largest and primarily urban populations. The analysis aims to identify whether SSRI prescriptions show distinct seasonal patterns, such as increases in autumn or winter. While this analysis focuses solely on SSRI prescription data and does not include specific conditions for which they are prescribed, the trends observed may offer insights into potential influences, such as daylight availability, weather, and healthcare utilization. Any suggested causes for these trends are speculative, as the data is limited to prescription counts rather than diagnoses or underlying factors.
+The analysis aims to identify whether SSRI prescriptions show distinct seasonal patterns. While this analysis focuses solely on SSRI prescription data and does not include specific conditions for which they are prescribed. Any suggested causes for these trends are speculative, as the data is limited to prescription counts rather than diagnoses or underlying factors.
+
 By presenting these patterns, this report aims to contribute to a better understanding of SSRI use across Scotland’s major health boards and highlight areas for further investigation into the broader factors that may drive these trends.
 
 Load Necessary Libraries 
@@ -33,186 +36,146 @@ library(gt)
 library(here)
 ```
 
-```{r Wrangling,include=TRUE, message = FALSE, Warning = FALSE}
-#listing all 2019 prescription data consistent with"pitc2019" files and loading them
-# using `map_dfr` to reads each file and combines them into one dataframe
-pitc_list <- list.files(path = "C:/Users/wurao/OneDrive/Documents/data_science/B205492/data", 
-                        pattern = "pitc2019.*\\.csv$", 
-                        full.names = TRUE)
-prescribed_data_2019 <- pitc_list %>%
-  map_dfr(read_csv)
-# Selecting and filtering focusing on the three largest health boards and specific SSRIs
-selected_prescribed_data_2019 <- prescribed_data_2019 %>%
-  select(HBT2014, BNFItemDescription, PaidQuantity, PaidDateMonth) %>%
-  filter( str_detect(BNFItemDescription, "^(SERTRALINE|PAROXETINE|FLUOXETINE|CITALOPRAM|ESCITALOPRAM)") &
-    HBT2014 %in% c("S08000032", "S08000031", "S08000024"))
-# Check for missing values
-any(is.na(selected_prescribed_data_2019))
-# Ensuring PaidDateMonth is in a consistent format and extract year
-filtered_selected_prescribed_data_2019 <- selected_prescribed_data_2019 %>%
-  mutate(PaidDateMonth = sprintf("%06d", as.numeric(PaidDateMonth)),  # Ensuring PaidDateMonth is in YYYYMM format as string
-    PaidDateMonth = as.Date(paste0(PaidDateMonth, "01"), format = "%Y%m%d"),  # Convert to Date
-    Year = format(PaidDateMonth, "%Y"),  # Extract the year as a string
-    Season = case_when(
-      format(PaidDateMonth, "%m") %in% c("12", "01", "02") ~ "Winter",
-      format(PaidDateMonth, "%m") %in% c("03", "04", "05") ~ "Spring",
-      format(PaidDateMonth, "%m") %in% c("06", "07", "08") ~ "Summer",
-      format(PaidDateMonth, "%m") %in% c("09", "10", "11") ~ "Autumn",
-      TRUE ~ "Unknown"  # Fallback for invalid months
-    ))
-# Rename 'HBT2014' column values for Health Boards
-filtered_selected_prescribed_data_2019 <- filtered_selected_prescribed_data_2019 %>%
-  mutate(HealthBoard = recode(HBT2014,
+```{r Wrangling,include = TRUE, message = FALSE, Warning = FALSE}
+# Function to process prescription data from multiple CSV files
+process_prescription_data <- function(file_paths, health_boards) {
+  # Step 1: Load and combine the files
+  processed_data <- map_dfr(file_paths, ~ {
+    message("Processing file: ", .x)  # Debugging log
+    # Read the file, select relevant columns and filter relevant rows
+    read_csv(.x, col_types = cols()) %>%
+      select(HBT2014, BNFItemDescription, PaidQuantity, PaidDateMonth) %>%  
+      filter(str_detect(BNFItemDescription, "^(SERTRALINE|PAROXETINE|FLUOXETINE|CITALOPRAM|ESCITALOPRAM)") & 
+               HBT2014 %in% health_boards)})
+  # Step 2: Cleaning and transforming the data by using mutate
+  full_prescribed_data <- processed_data %>%
+    mutate( # Retaining the PaidDateMonth in YYYYMMDD format
+      PaidDateMonth = sprintf("%06d",    as.numeric(PaidDateMonth)), PaidDateMonth = paste0(PaidDateMonth, "01"),  
+      # Appending day to create YYYYMMDD format as string
+      PaidDate = as.Date(PaidDateMonth, format = "%Y%m%d"),  # Convert to Date object
+      Year = format(PaidDate, "%Y"),  # Extract Year as string
+      # Create Season column based on PaidDate
+      Season = case_when(
+        format(PaidDate, "%m") %in% c("12", "01", "02") ~ "Winter",
+        format(PaidDate, "%m") %in% c("03", "04", "05") ~ "Spring",
+        format(PaidDate, "%m") %in% c("06", "07", "08") ~ "Summer",
+        format(PaidDate, "%m") %in% c("09", "10", "11") ~ "Autumn",
+        TRUE ~ "Unknown") ) %>%
+    # Recode health boards to be more readable 
+    mutate(HealthBoard = recode(HBT2014,
       "S08000032" = "Lanarkshire",
       "S08000031" = "Greater Glasgow & Clyde",
-      "S08000024" = "Lothian")) %>% 
-  select(-HBT2014)  # Drop the original HBT2014 column
-# Summarize total prescriptions by Health Board, Season, and Year
-seasonal_data <- filtered_selected_prescribed_data_2019 %>%
-group_by(HealthBoard, Season, Year) %>%
-summarise(total_prescriptions = sum(PaidQuantity, na.rm = TRUE)  # Sum PaidQuantity while handling NA
-  ) %>%
-  ungroup()
-# View the result
-view(seasonal_data)
+      "S08000024" = "Lothian",
+      "S08000023" = "Lanarkshire",
+      "S08000021" = "Greater Glasgow & Clyde")) %>%
+    select(-HBT2014)  # Drop the original HBT2014 column
+    return(full_prescribed_data)}
+# 2019 prescription data
+pitc_list <- list.files(path = "C:/Users/wurao/OneDrive/Documents/data_science/B205492/docs", 
+         pattern = "pitc2019.*\\.csv$", full.names =TRUE)
+health_boards <- c("S08000032", "S08000031", "S08000024")
+# Process the data using the updated function
+processed_data_2019 <- process_prescription_data(pitc_list, health_boards)
+# Summarize total prescriptions by Health Board, Season, Year
+seasonal_data <- processed_data_2019 %>%
+  group_by(HealthBoard, Season, Year, ) %>%
+  summarise( "Total prescriptions" = sum(PaidQuantity, na.rm = TRUE), .groups = 'drop')
 ```
-
-## 2019 Plot
-**figure 1 
+## 2019 Trend
+Figure 1 
 ```{r 2019 plot, echo=TRUE}
 seasonal_data <- seasonal_data %>%
  mutate(HealthBoard = str_trim(HealthBoard)) #to remove any leading or trailing whitespace characters from the HealthBoard column in the dataset
-# Seasonal pattern plot
 seasonal_plot <- seasonal_data %>%
-  ggplot(aes(x = Season, y = total_prescriptions, group = HealthBoard, color = HealthBoard)) + geom_line(linewidth = 1.2) + geom_point(size = 3) +labs( title = "Seasonal Patterns of SSRI Antidepressant Use Across Health Board",
-    x = "Season",
-    y = "Total Prescriptions" ) + scale_color_manual(values = c(
-    "Lanarkshire" = "blue", 
-    "Greater Glasgow & Clyde" = "green", 
-    "Lothian" = "purple" )) + theme_minimal(base_size = 14) +       theme(legend.position = "top", legend.title =     element_blank(), plot.title = element_text(face = "bold", hjust = 0.5),axis.text = element_text(color = "gray30"),
-    panel.grid.major = element_line(color = "gray85"),
-    axis.text.x = element_text(angle = 45, hjust = 0.1),
-    plot.margin = margin(t = 40, r = 20, b = 20, l = 20) # Adjust margins to avoid clipping
-  )
-# Display the plot
-seasonal_plot
+  ggplot(aes(x = Season, y = `Total prescriptions`, group = HealthBoard, color = HealthBoard)) +
+  geom_line(linewidth = 1.2) +  # Line plot with specified line width
+  geom_point(size = 3) +  # Add points to the plot
+  labs(title = "2019 Seasonal Patterns of SSRI Antidepressant Use Across Health Boards", x = "Season",y = "Total Prescriptions" ) + 
+  theme_minimal() +  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
+# Print the plot
+print(seasonal_plot)
 ```
+
 The visualization of SSRI prescriptions across Scotland's three major health boards in 2019 suggests a notable seasonal trend. Prescription rates appear to peak in the autumn months across NHS Greater Glasgow & Clyde, NHS Lanarkshire, and NHS Lothian, followed by a noticeable decline in winter, with spring and summer showing moderate levels. although this was unexpected this pattern implies a possible cycle where prescription demand rises as autumn approaches and diminishes in winter. To understand if this trend is consistent, further analysis will involve expanding the dataset to cover the 3 years prior. By examining a longer period,it will highlight whether these seasonal fluctuations are stable over time or influenced by other factor.
-```{r wrangling 2016-2018, include=FALSE}
+
+## 2016-2018 Trend
+ 
+```{r wrangling 2016-2018, include=TRUE, message = FALSE, Warning = FALSE}
 # Step 1: Listing Relevant CSV Files
-pitc_list <- list.files(path = here("data"), 
+pitc_list <- list.files(path = here("docs"), 
   pattern = "pitc(2016|2017|2018)(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\\.csv$", 
   full.names = TRUE) 
-if (length(pitc_list) == 0) { stop("No matching files found. Check the file names or pattern.")}
-# Step 2: Processing Each File in Chunks and Filter
-selected_prescribed_data <- map_dfr(pitc_list, ~ {
-  message("Processing file: ", .x)  # Debugging log
-  # Read the file and directly filter relevant rows & Select relevant columns
-  read_csv(.x, col_types = cols()) %>%
-    select(HBT2014, BNFItemDescription, PaidQuantity, PaidDateMonth) %>%  
-    filter(str_detect(BNFItemDescription, "^(SERTRALINE|PAROXETINE|FLUOXETINE|CITALOPRAM|ESCITALOPRAM)") &  HBT2014 %in% c("S08000023", "S08000021", "S08000024"))})
-# Step 3: Verify the Results
-print(dim(selected_prescribed_data))  # Print dimensions of the filtered data
-print(head(selected_prescribed_data))  # Preview the first few rows
-#next :mutate format of paiddatemonth 
-full_prescribed_data<- selected_prescribed_data%>%
- mutate( Season = case_when(
-      str_sub(PaidDateMonth, 5, 6) %in% c("12", "01", "02") ~ "Winter",
-      str_sub(PaidDateMonth, 5, 6) %in% c("03", "04", "05") ~ "Spring",
-      str_sub(PaidDateMonth, 5, 6) %in% c("06", "07", "08") ~ "Summer",
-      str_sub(PaidDateMonth, 5, 6) %in% c("09", "10", "11") ~ "Autumn",
-      TRUE ~ "Unknown"),
-    HealthBoard = recode(HBT2014,
-      "S08000023" = "Lanarkshire",
-      "S08000021" = "Greater Glasgow & Clyde",
-      "S08000024" = "Lothian",
-      .default = "Other")) %>%
-  select(-HBT2014)  # Drop the original HBT2014 column
-```
 
-## 2016-2018 plots
+if (length(pitc_list) == 0) { stop("No matching files found. Check the file names or pattern.")}
+# Step 2: Apply the function to process the files
+health_boards <- c("S08000023", "S08000021", "S08000024")  # Customize this as needed
+three_years_data <- process_prescription_data(pitc_list, health_boards)
+```
 Figure 2
 ```{r BAR PLOT 2016-2018, echo=TRUE}
-# Transform PaidDateMonth to Date and Extract Year
-full_prescribed_data <- full_prescribed_data %>%
-  mutate(PaidDateMonth = as.Date(paste0(PaidDateMonth, "01"), format = "%Y%m%d"),  # Convert to date using correct format
-    Year = format(PaidDateMonth, "%Y")  # Extract the year as a string
-  )
 # Summarize Data
-Bar_prescribed_data <- full_prescribed_data %>%
-  group_by(Season, Year, HealthBoard) %>%
-  summarize(total_prescriptions = sum(PaidQuantity, na.rm = TRUE), .groups = "drop")
+Bar_prescribed_data <- three_years_data %>%
+  group_by(Season, Year, HealthBoard,) %>%
+  summarize(`Total prescriptions` = sum(PaidQuantity, na.rm = TRUE),       .groups = "drop")
 # Create Bar Plot
-ggplot(Bar_prescribed_data, aes(x = Season, y = total_prescriptions, fill = Season)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.6) +  # Adjusting spacing and bar width
-  facet_grid( rows = vars(HealthBoard),  # Use rows for HealthBoard
+ggplot(Bar_prescribed_data, aes(x = Season, y = `Total prescriptions`, fill = Season)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 5), width = 0.9) +  # Adjusting spacing and bar width
+  facet_grid(
+    rows = vars(HealthBoard),  # Using rows for HealthBoard
     cols = vars(Year),
     scales = "free_y",  # Adjust y-scales independently
-    labeller = label_wrap_gen(width = 15)  
-    # Wrap long facet labels
-    ) + geom_text(aes(label = round(total_prescriptions, 0)),
-            position = position_dodge(width = 0.9), 
-            # Match bar dodge spacing
-            vjust = -0.3, size = 3) +  
-  # Adjust text placement and size
-  labs(title = "Seasonal Patterns of SSRI Prescriptions by Year and Health Board",
+    labeller = label_wrap_gen(width = 15)  # Wrap long facet labels
+  ) + 
+  labs(
+    title = "Seasonal Patterns of SSRI Prescriptions by Year and Health Board",
     x = "Season",
-    y = "Total Prescriptions") + theme_minimal() + theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),  
-    # Rotate x-axis labels
+    y = "Total Prescriptions"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),   # Rotating x-axis labels
     strip.text = element_text(face = "bold"), 
-    # Bold facet titles
-    plot.margin = margin(30, 30, 30, 30),  
-    # Add larger margins to avoid clipping
-    legend.position = "none"  # Remove legend
-  ) + scale_fill_manual(values = c("Winter" = "blue", "Spring" = "green", "Summer" = "orange", "Autumn" = "brown")) +
-  coord_cartesian(clip = "off") 
-# Prevent clipping of text outside plot area
+    plot.margin = margin(30, 30, 30, 30),  # Add larger margins to avoid clipping
+    legend.position = "none"
+  ) +
+  scale_fill_manual(values = c("Winter" = "blue", "Spring" = "green", "Summer" = "orange", "Autumn" = "brown")) +
+  coord_cartesian(clip = "off")  # Prevent clipping of text outside plot area
 ```
 
-The data from 2016 to 2018 reveals consistent seasonal trends in SSRI prescriptions across Greater Glasgow & Clyde, Lanarkshire, and Lothian. In 2016, Autumn had the highest prescriptions: 8.88 million in Greater Glasgow & Clyde, 5.05 million in Lanarkshire, and 5.28 million in Lothian, while Winter had the lowest. In 2017, Autumn prescriptions increased to 9.27 million in Greater Glasgow & Clyde, 5.32 million in Lanarkshire, and 5.53 million in Lothian, with Winter remaining the lowest. By 2018, the trend continued, reaching 9.71 million in Greater Glasgow & Clyde, 5.61 million in Lanarkshire, and 5.83 million in Lothian, with Winter again having the lowest totals.
+In Figure 2, data from 2016 to 2018 show consistent seasonal trends in SSRI prescriptions across Greater Glasgow & Clyde, Lanarkshire, and Lothian. In 2016, Autumn had the highest prescriptions: 8.88 million in Greater Glasgow & Clyde, 5.05 million in Lanarkshire, and 5.28 million in Lothian, with Winter consistently the lowest. Similar patterns were observed in 2017 and 2018, with Autumn prescriptions rising to 9.71 million in Greater Glasgow & Clyde, 5.61 million in Lanarkshire, and 5.83 million in Lothian by 2018.
 
-Across all years, Autumn consistently showed the highest SSRI prescription totals, followed by Spring and Summer, while Winter had the lowest. This stable pattern across all three health boards indicates a clear seasonal cycle in SSRI prescribing habits. To gain deeper insight into this trend, I would examine monthly data to identify more specific variations within each season.
+Autumn consistently showed the highest prescription totals, followed by Spring and Summer, while Winter remained the lowest. These stable patterns across all health boards reinforce a seasonal cycle in prescribing habits, further explored through monthly data for more granular insights.
+
 Figure 3 
 ```{r line plot 2016-2018}
 # Summarize the data and prepare for plotting
-monthly_data <- full_prescribed_data %>%
-  group_by(Year, HealthBoard, PaidDateMonth) %>%
-  summarize(total_prescriptions = sum(PaidQuantity, na.rm = TRUE), .groups = "drop") %>%
-  mutate(
-  # Create a Month_Factor to order months starting with December
-    Month_Factor = factor(month(PaidDateMonth, label = TRUE, abbr = TRUE), levels = c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov")),
-    # Assign seasons based on months
-    Season = case_when(
-      Month_Factor %in% c("Dec", "Jan", "Feb") ~ "Winter",
-      Month_Factor %in% c("Mar", "Apr", "May") ~ "Spring",
-      Month_Factor %in% c("Jun", "Jul", "Aug") ~ "Summer",
-      Month_Factor %in% c("Sep", "Oct", "Nov") ~ "Autumn" ),
-    # Combine Year and Month for plotting
-    Month_Year = as.Date(paste(Year, month(PaidDateMonth), "1", sep = "-")))
+monthly_data <- three_years_data %>%
+  group_by(Year, HealthBoard, PaidDateMonth,Season) %>%  # Ensure columns are correctly grouped
+  summarize(`Total prescriptions` = sum(PaidQuantity, na.rm = TRUE), .groups = "drop") %>%
+  # Create a Month_Factor to order months starting with March
+  mutate(Month_Factor = factor(format(as.Date(PaidDateMonth, format = "%Y%m%d"), "%b"),  # Extract abbreviated month name from the date
+    levels = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb")))
 # Plot the monthly trends with seasons
-ggplot(monthly_data, aes(x = Month_Factor, y = total_prescriptions, group = Season, color = Season)) +
+ggplot(monthly_data, aes(x = Month_Factor, y = `Total prescriptions`, group = Season, color = Season)) +
   geom_line(size = 1) +  # Line plot with color for Season
   geom_point(size = 2) +  # Adding points for better visibility
   facet_grid(HealthBoard ~ Year, labeller = labeller(HealthBoard = label_wrap_gen(15))  # Wrap labels for HealthBoard
   ) + labs( title = "Monthly Trends in SSRI Prescriptions by Health Board, Year, and Season", x = "Month", y = "Total Prescriptions",color = "Season" ) + scale_color_manual(values = c("Winter" = "blue", "Spring" = "green","Summer" = "orange", "Autumn" = "brown")) +  # Custom colors for seasons
   theme_minimal() + theme( axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
-    strip.text = element_text(face = "bold", size = 10),  # Bold facet titles
+    strip.text = element_text(face = "bold", size = 10), 
     legend.position = "bottom",  # Legend below the plot
     plot.title = element_text(hjust = 0.5),  # Center the plot title
     strip.text.y = element_text(margin = margin(r = 10)),  # Add margin to HealthBoard labels
     plot.margin = margin(t = 10, r = 10, b = 10, l = 20)  # Increase overall plot margins
   )
-# View the sorted data
-head(monthly_data)
 ```
   
- Observation of figure 3  shows that across the three years, autumn into the start of winter, particularly October, November, and December, consistently showed the highest SSRI prescription totals for most of Scotland's major health boards. For Greater Glasgow and Clyde, October was the highest in 2018, followed by November in 2017. In Lothian, December was the peak month across all three years, and for Lanarkshire, November was the highest for 2017 and 2016, with August being the peak month for 2018. This pattern suggests that the autumn and early winter months—October, November, and December—tend to see higher SSRI prescriptions. This details could not be seen in the previous plots due to the aggregation of the months but observing the months provide insight into the finer details within each year. 
+ Observation of figure 3 shows that across the three years, autumn into the start of winter, particularly October, November, and December, consistently showed the highest SSRI prescription totals for most of Scotland's major health boards. For Greater Glasgow and Clyde, October was the highest in 2018, followed by November in 2017. In Lothian, December was the peak month across all three years, and for Lanarkshire, November was the highest for 2017 and 2016, with August being the peak month for 2018. This pattern suggests that the autumn and early winter months—October, November, and December—tend to see higher SSRI prescriptions. This details could not be seen in the previous plots due to the aggregation of the months. However, observing the individual months provide insight into the finer details within each year. 
+ 
+## Table 
 ```{r Table}
 # Combine 2016-2018 and 2019 datasets
 combined_prescribed_data <- bind_rows(Bar_prescribed_data, seasonal_data)
-# Check the combined dataset
-glimpse(combined_prescribed_data)
 # Create the gt table
 gt_table <- combined_prescribed_data %>%
   arrange(Year, HealthBoard, Season) %>%
@@ -224,8 +187,8 @@ gt_table <- combined_prescribed_data %>%
     Year = "Year",
     HealthBoard = "Health Board",
     Season = "Season",
-    total_prescriptions = "Total Prescriptions") %>%
-  fmt_number(columns = total_prescriptions,decimals = 0  # No decimals for prescription counts
+   `Total prescriptions` = "Total Prescriptions") %>%
+  fmt_number(columns = `Total prescriptions`,decimals = 0  # No decimals for prescription counts
   ) %>%
   tab_style(style = cell_text(weight = "bold"),locations = cells_row_groups(groups = TRUE)  # Bold year group labels
   ) %>%
@@ -253,11 +216,9 @@ gt_table <- combined_prescribed_data %>%
     locations = cells_column_labels()  # Center align column headers
   ) %>%
   tab_style(style = cell_text(weight = "bold", color = "darkblue"),
-    locations = cells_column_labels(columns = c("Year", "HealthBoard"))
-  ) %>%
+    locations = cells_column_labels(columns = c("Year", "HealthBoard"))) %>%
   tab_style(style = cell_text(weight = "normal", color = "black"),
-    locations = cells_body(columns = c("Year", "HealthBoard", "Season"))
-  ) %>%
+    locations = cells_body(columns = c("Year", "HealthBoard", "Season"))) %>%
   tab_options(table.width = pct(100),  # Set the table to take up 100% of the width
     table.align = "center"   # Align the table to the center
   )
@@ -265,9 +226,43 @@ gt_table <- combined_prescribed_data %>%
 # Display the formatted table
 gt_table
 ```
+
 ## Discussions 
- 
- 
- 
- 
- **References 
+
+This study analysed seasonal patterns in SSRI prescriptions across Scotland’s three major health boards, revealing trends consistent with previous research conducted in northern countries. Prescription rates exhibited clear seasonal variation, with higher rates observed during autumn into the start of winter, which may be influenced by environmental and behavioural factors.
+
+### Comparison with Existing Literature
+
+The findings in this report align with research by Harmatz et al. (2000) in the United States, which observed increased antidepressant use during autumn and winter, correlating with seasonal affective disorder (SAD). Reduced sunlight during winter months can exacerbate depressive symptoms, as sunlight plays a significant role in regulating circadian rhythms and serotonin levels. Scotland’s high latitude, characterized by particularly short winter days, may intensify this seasonal effect.
+Contrastingly, Sato et al. (2013) found less pronounced seasonal trends in antidepressant use in Japan. This disparity may reflect cultural differences in mental health stigma, healthcare access, and prescribing practices, as well as Japan's milder seasonal variations compared to Scotland. Such findings underscore the complex interplay of environmental, social, and healthcare system factors that shape prescription trends.
+
+### Potential Explanations for Observed Trends
+
+The seasonal trends identified in this study likely result from a combination of factors. Reduced sunlight during winter, as discussed by Lam et al. (2006), is a well-documented physiological driver of seasonal depressive symptoms. Furthermore, public awareness campaigns and mental health initiatives during certain months may also influence healthcare-seeking behaviour and, ultimately, prescription rates.
+The observed autumn peak in SSRI prescriptions could be attributed to transitional stressors, such as the start of the academic year and its associated pressures, which may particularly affect students and parents. Additionally, the approach of the festive season, often a source of social and financial strain, could exacerbate existing mental health challenges, leading to increased healthcare utilization during this period (Jack et al., 2023).
+
+The variations observed across Scotland's three major health boards may reflect differences in healthcare access, urbanization, and demographic characteristics. The more Urban areas such as Greater Glasgow & Clyde often exhibit more pronounced seasonal patterns, possibly due to better access to healthcare services. Conversely, the less urban populations may face barriers such as greater distances to care facilities, which could dampen observable trends in those regions.
+
+### Limitations and Future Directions
+
+This study provides valuable insights into SSRI prescription patterns but is subject to several limitations. The analysis focuses solely on SSRIs, excluding other antidepressant classes that might exhibit different seasonal trends. Moreover, the lack of individual-level diagnostic information limits the ability to directly associate prescriptions with specific conditions such as SAD.
+For future direction research would benefit from addressing these limitations by incorporating demographic data, examining the usage patterns of non-SSRI antidepressants. Expanding the study’s geographic scope to include rural and remote areas which could provide a more comprehensive understanding of the role of healthcare access in seasonal variations.
+
+### conclusion
+
+This study contributes to the growing body of evidence that seasonal factors influence SSRI prescribing patterns, particularly in high-latitude regions like Scotland. By exploring these trends, policymakers and healthcare providers can better understand the drivers of mental health treatment demand and implement strategies to improve the accessibility and timing of mental health care.
+
+
+## References 
+1.	Harmatz, M. G., Well, A. D., Overtree, C. E., et al. (2000). Seasonal variation in depressive symptoms in a general population. American Journal of Psychiatry.
+2.	Madsen, T., Eplov, L. F., Mortensen, P. B., et al. (2015). Trends in antidepressant use: A nationwide study. BMJ Open.
+3.	Lam, R. W., Levitt, A. J., Levitan, R. D., et al. (2006). Seasonal affective disorder: A review of the syndrome and its treatment. Canadian Medical Association Journal.
+4.	Sato, T., Demura, S., & Kobayashi, Y. (2013). Seasonal differences in psychological and physiological changes in response to mental stress in a population without pronounced seasons. Psychiatry and Clinical Neurosciences.
+5.	Jack, R. H., Joseph, R. M., Hollis, C., Hippisley-Cox, J., Butler, D., Waldram, D., & Coupland, C. (2023). Seasonal trends in antidepressant prescribing, depression, anxiety and self-harm in adolescents and young adults: an open cohort study using English primary care data. BMJ Mental Health, 26(1). https://doi.org/10.1136/bmjment-2023-300855
+
+how AI helped me? 
+
+Function Development: Used AI to assist/polish in creating an R function for automating seasonal data filtering and summarization, streamlining the analysis process across multiple datasets.
+ It also helped with struggle i had with my visualization such as giving ideas such as:Wrapping long facet labels when nothing was helping my labels not get cut off and recommending coord_cartesian. 
+
+
