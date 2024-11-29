@@ -34,6 +34,7 @@ library(tidyverse)
 library(janitor) 
 library(gt)
 library(here)
+library(plotly)
 ```
 
 ```{r Wrangling,include = TRUE, message = FALSE, Warning = FALSE}
@@ -117,29 +118,32 @@ Figure 2
 Bar_prescribed_data <- three_years_data %>%
   group_by(Season, Year, HealthBoard,) %>%
   summarize(`Total prescriptions` = sum(PaidQuantity, na.rm = TRUE),       .groups = "drop")
-# Create Bar Plot
-ggplot(Bar_prescribed_data, aes(x = Season, y = `Total prescriptions`, fill = Season)) +
+# Bar Plot with ggplot2
+p <- ggplot(Bar_prescribed_data, aes(x = Season, y = `Total prescriptions`, fill = Season, text = `Total prescriptions`)) +
   geom_bar(stat = "identity", position = position_dodge(width = 5), width = 0.9) +  # Adjusting spacing and bar width
   facet_grid(
     rows = vars(HealthBoard),  # Using rows for HealthBoard
     cols = vars(Year),
     scales = "free_y",  # Adjust y-scales independently
     labeller = label_wrap_gen(width = 15)  # Wrap long facet labels
-  ) + 
-  labs(
+  ) + labs(
     title = "Seasonal Patterns of SSRI Prescriptions by Year and Health Board",
     x = "Season",
     y = "Total Prescriptions"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),   # Rotating x-axis labels
+  ) + theme_minimal() +
+  theme( axis.text.x = element_text(angle = 45, hjust = 1),   # Rotating x-axis labels
     strip.text = element_text(face = "bold"), 
     plot.margin = margin(30, 30, 30, 30),  # Add larger margins to avoid clipping
     legend.position = "none"
   ) +
   scale_fill_manual(values = c("Winter" = "blue", "Spring" = "green", "Summer" = "orange", "Autumn" = "brown")) +
   coord_cartesian(clip = "off")  # Prevent clipping of text outside plot area
+
+# Convert ggplot to Interactive Plotly Plot
+interactive_plot <- ggplotly(p, tooltip = c("x", "y", "text"))
+
+# Show the Interactive Plot
+interactive_plot
 ```
 
 In Figure 2, data from 2016 to 2018 show consistent seasonal trends in SSRI prescriptions across Greater Glasgow & Clyde, Lanarkshire, and Lothian. In 2016, Autumn had the highest prescriptions: 8.88 million in Greater Glasgow & Clyde, 5.05 million in Lanarkshire, and 5.28 million in Lothian, with Winter consistently the lowest. Similar patterns were observed in 2017 and 2018, with Autumn prescriptions rising to 9.71 million in Greater Glasgow & Clyde, 5.61 million in Lanarkshire, and 5.83 million in Lothian by 2018.
