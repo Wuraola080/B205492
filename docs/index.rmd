@@ -109,7 +109,7 @@ pitc_list <- list.files(path = here("docs"),
 
 if (length(pitc_list) == 0) { stop("No matching files found. Check the file names or pattern.")}
 # Step 2: Apply the function to process the files
-health_boards <- c("S08000023", "S08000021", "S08000024")  # Customize this as needed
+health_boards <- c("S08000023", "S08000021", "S08000024") 
 three_years_data <- process_prescription_data(pitc_list, health_boards)
 ```
 Figure 2
@@ -124,14 +124,14 @@ p <- ggplot(Bar_prescribed_data, aes(x = Season, y = `Total prescriptions`, fill
   facet_grid(
     rows = vars(HealthBoard),  # Using rows for HealthBoard
     cols = vars(Year),
-    scales = "free_y",  # Adjust y-scales independently
+    scales = "free_y", 
     labeller = label_wrap_gen(width = 15)  # Wrap long facet labels
   ) + labs(
     title = "Seasonal Patterns of SSRI Prescriptions by Year and Health Board",
     x = "Season",
     y = "Total Prescriptions"
   ) + theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),   # Rotating x-axis labels
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  
         strip.text = element_text(face = "bold", size = 10, hjust = 0.5),  # Center facet labels
         plot.margin = margin(30, 50, 30, 30),  # Increase right margin for more space
         legend.position = "none",
@@ -153,7 +153,7 @@ Figure 3
 ```{r line plot 2016-2018}
 # Summarize the data and prepare for plotting
 monthly_data <- three_years_data %>%
-  group_by(Year, HealthBoard, PaidDateMonth,Season) %>%  # Ensure columns are correctly grouped
+  group_by(Year, HealthBoard, PaidDateMonth,Season) %>%  
   summarize(`Total prescriptions` = sum(PaidQuantity, na.rm = TRUE), .groups = "drop") %>%
   # Create a Month_Factor to order months starting with March
   mutate(Month_Factor = factor(format(as.Date(PaidDateMonth, format = "%Y%m%d"), "%b"),  # Extract abbreviated month name from the date
@@ -161,11 +161,9 @@ monthly_data <- three_years_data %>%
 # Plot the monthly trends with seasons
 ggplot(monthly_data, aes(x = Month_Factor, y = `Total prescriptions`, group = Season, color = Season)) +
   geom_line(size = 1) +  # Line plot with color for Season
-  geom_point(size = 2) +  # Adding points for better visibility
-  facet_grid(HealthBoard ~ Year, labeller = labeller(HealthBoard = label_wrap_gen(15))  # Wrap labels for HealthBoard
+  geom_point(size = 2) + facet_grid(HealthBoard ~ Year, labeller = labeller(HealthBoard = label_wrap_gen(15))  # Wrap labels for HealthBoard
   ) + labs( title = "Monthly Trends in SSRI Prescriptions by Health Board, Year, and Season", x = "Month", y = "Total Prescriptions",color = "Season" ) + scale_color_manual(values = c("Winter" = "blue", "Spring" = "green","Summer" = "orange", "Autumn" = "brown")) +  # Custom colors for seasons
-  theme_minimal() + theme( axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
-    strip.text = element_text(face = "bold", size = 10), 
+  theme_minimal() + theme( axis.text.x = element_text(angle = 45, hjust = 1), strip.text = element_text(face = "bold", size = 10), 
     legend.position = "bottom",  # Legend below the plot
     plot.title = element_text(hjust = 0.5),  # Center the plot title
     strip.text.y = element_text(margin = margin(r = 10)),  # Add margin to HealthBoard labels
@@ -193,8 +191,7 @@ gt_table <- combined_prescribed_data %>%
    `Total prescriptions` = "Total Prescriptions") %>%
   fmt_number(columns = `Total prescriptions`,decimals = 0  # No decimals for prescription counts
   ) %>%
-  tab_style(style = cell_text(weight = "bold"),locations = cells_row_groups(groups = TRUE)  # Bold year group labels
-  ) %>%
+  tab_style(style = cell_text(weight = "bold"),locations = cells_row_groups(groups = TRUE)) %>%
   tab_options(
     row_group.as_column = TRUE,
     table.font.size = 14,  # Larger font size for readability
