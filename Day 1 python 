@@ -1,0 +1,244 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyO0b86hemg9kNS1ZnLYW3MV",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Wuraola080/B205492/blob/main/Day%201%20python%20\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Ol9H1Mp4Ninf",
+        "outputId": "b40ee600-7be6-4339-c8fa-584c818cb2c0"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Wura\n",
+            "Wura-s2201915\n",
+            "Baa, baa, black sheep\n",
+            "\tHave you any wool?\n",
+            "Yes sir, yes sir\n",
+            "\t\tThree bags full. \n",
+            "One for my master\n",
+            "\tAnd one for the dame\n",
+            "One for the little boy\n",
+            "Who lives down the lane.\n",
+            "please enter the first number:2\n",
+            "please enter the second number:2\n",
+            "The multiplicaton is: 4\n",
+            "the result is positive\n"
+          ]
+        }
+      ],
+      "source": [
+        "#question 1\n",
+        "print(\"Wura\")\n",
+        "\n",
+        "#question 2\n",
+        "print(\"Wura\", \"s2201915\", sep=\"-\")\n",
+        "\n",
+        "#question 3\n",
+        "print(\"Baa, baa, black sheep\\n\\tHave you any wool?\\nYes sir, yes sir\\n\\t\\tThree bags full. \\nOne for my master\\n\\tAnd one for the dame\\nOne for the little boy\\nWho lives down the lane.\")\n",
+        "\n",
+        "#question 4 multiplication of two numbers\n",
+        "nb1 = int(input(\"please enter the first number:\"))\n",
+        "nb2 = int(input(\"please enter the second number:\"))\n",
+        "multiplicationNbs = nb1 * nb2\n",
+        "print(\"The multiplicaton is:\", multiplicationNbs)\n",
+        "\n",
+        "#question 5 /6    if two option use = if else , while if there are more than 2 options elif : starts with if, then elif , elif , and ends with else\n",
+        "if multiplicationNbs > 0 :\n",
+        "  print(\"the result is positive\")\n",
+        "elif multiplicationNbs < 0 :\n",
+        "  print(\"the result is negative\")\n",
+        "else:\n",
+        "  print (\"the result is zero\")\n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#question 7 For loop\n",
+        "for X in range(51):\n",
+        "  if X == 37 or X == 16:\n",
+        "     continue    # this skips over numbers while break stops at that numb\n",
+        "  print(X)\n",
+        "\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "lPUyPV1ZZwB7",
+        "outputId": "ef07275b-15e6-4f76-d332-67608dea8913"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "0\n",
+            "1\n",
+            "2\n",
+            "3\n",
+            "4\n",
+            "5\n",
+            "6\n",
+            "7\n",
+            "8\n",
+            "9\n",
+            "10\n",
+            "11\n",
+            "12\n",
+            "13\n",
+            "14\n",
+            "15\n",
+            "17\n",
+            "18\n",
+            "19\n",
+            "20\n",
+            "21\n",
+            "22\n",
+            "23\n",
+            "24\n",
+            "25\n",
+            "26\n",
+            "27\n",
+            "28\n",
+            "29\n",
+            "30\n",
+            "31\n",
+            "32\n",
+            "33\n",
+            "34\n",
+            "35\n",
+            "36\n",
+            "38\n",
+            "39\n",
+            "40\n",
+            "41\n",
+            "42\n",
+            "43\n",
+            "44\n",
+            "45\n",
+            "46\n",
+            "47\n",
+            "48\n",
+            "49\n",
+            "50\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#question 8\n",
+        "numbers = [1,2,3,4,5,6,7,8,9,10]\n",
+        "even_count=0\n",
+        "odd_count=0\n",
+        "for num in numbers:\n",
+        "  if num % 2==0:\n",
+        "    even_count +=1\n",
+        "  else:\n",
+        "     odd_count+=1\n",
+        "print(\"even numbers:\", even_count)\n",
+        "print(\"odd numbers:\", odd_count)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "GFwQcm5Gc2Jg",
+        "outputId": "a510ae18-ff67-4087-b3ed-6c64fe82cb6f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "even numbers: 5\n",
+            "odd numbers: 5\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#queston 9 randomly generated numbs\n",
+        "import random\n",
+        "random_list = [random.randint(1, 100) for _ in range(20)]\n",
+        "print(\"Random list:\", random_list)\n",
+        "even_count=0\n",
+        "odd_count=0\n",
+        "for num in random_list:\n",
+        "  if num % 2==0:\n",
+        "    even_count +=1\n",
+        "  else:\n",
+        "     odd_count+=1\n",
+        "print(\"even numbers:\", even_count)\n",
+        "print(\"odd numbers:\", odd_count)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Y0J-A0UhhOPT",
+        "outputId": "fc4ff33c-c4cd-4a4f-8783-d921f8cc9a48"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Random list: [62, 88, 26, 69, 63, 99, 22, 18, 5, 51, 79, 47, 9, 5, 58, 88, 79, 61, 80, 14]\n",
+            "even numbers: 9\n",
+            "odd numbers: 11\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "7qHPiTfYk4sA"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
